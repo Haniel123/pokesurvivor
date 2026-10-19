@@ -19,7 +19,14 @@
  *       peers() · mode(uid) -> 'connecting' | 'direct' | 'relay' | 'closed'
  */
 G.Net = (() => {
+  // STUN gratis de Google (siempre). El TURN es opcional y va AL FINAL para que
+  // el navegador prefiera el camino directo (más rápido y no gasta el servidor):
+  // se configura en js/net/turn-config.js y se explica en deploy/coturn/.
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+  try {
+    const t = (typeof G !== 'undefined' && G.TURN_CONFIG) || null;
+    if (t && t.urls) ICE.push({ urls: t.urls, username: t.username, credential: t.credential });
+  } catch (e) { /* sin TURN: se sigue sólo con STUN */ }
   const DIRECT_TIMEOUT = 9000;     // ms para conseguir canal directo antes de usar el relé
   // Relé por la Realtime Database APAGADO (12-10-2026): a 1 $ el GB era lo que más
   // costaba del cooperativo. Sin conexión directa, esa pareja no puede jugar

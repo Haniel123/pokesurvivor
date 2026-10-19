@@ -1,0 +1,19 @@
+# Build context gọn: nhẹ hơn và không lộ gì nội bộ.
+.git
+.github
+.vscode
+docs
+tests
+tools
+dev.html
+*.md
+CNAME
+Dockerfile
+.dockerignore
+docker-compose*.yml
+firebase.json
+database.rules.json
+firestore.rules
+firestore.indexes.json
+LICENSE
+LICENSE-NONCOMMERCIAL.md

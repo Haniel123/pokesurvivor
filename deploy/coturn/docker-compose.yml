@@ -1,0 +1,44 @@
+# coturn — TURN tự dựng cho chế độ coop (P2P).
+# Trong Dokploy: Create Compose → dán file này → Environment thêm 3 biến:
+#   TURN_USER          = pokesurvivor
+#   TURN_PASS          = <mật khẩu dài, ngẫu nhiên>
+#   TURN_EXTERNAL_IP   = <IP công khai của VPS>
+# Rồi mở firewall cho 3478/udp, 3478/tcp và dải 49160-49200/udp.
+#
+# network_mode: host là bắt buộc: TURN nói chuyện bằng UDP và tự mở hàng nghìn
+# cổng relay, Traefik (chỉ HTTP) không proxy được.
+services:
+  coturn:
+    # Ghim phiên bản sau khi đã chạy được (đổi latest -> 4.6.2 chẳng hạn).
+    image: coturn/coturn:latest
+    container_name: pokesurvivor-turn
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --log-file=stdout
+      - --listening-port=3478
+      # Dải cổng relay: càng hẹp càng dễ quản lý firewall (mỗi phiên dùng 1 cổng).
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --lt-cred-mech
+      - --realm=pokesurvivor.com
+      - --user=${TURN_USER}:${TURN_PASS}
+      # Giới hạn chống lạm dụng (mật khẩu nằm trong bundle công khai).
+      - --quota=10
+      - --total-quota=100
+      - --max-bps=600000
+      - --stale-nonce
+      - --no-multicast-peers
+      - --no-cli
+      - --external-ip=${TURN_EXTERNAL_IP}
+      # Không cho relay vào mạng nội bộ của VPS (SSRF).
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.0.0.0-192.0.2.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+      - --denied-peer-ip=198.18.0.0-198.19.255.255

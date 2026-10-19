@@ -31,7 +31,13 @@ publish bản cũ.
 ## 2. Tạo application trong Dokploy
 
 1. **Create Application** → tên: `pokesurvivor`.
-2. **General → Provider**: GitHub → repo `JPTER78/pokesurvivor`, branch `main`.
+2. **General → Provider** — chọn **Git** (không cần kết nối tài khoản GitHub):
+   - *Repository URL*: `https://github.com/JPTER78/pokesurvivor.git`
+   - *Branch*: `main`
+   - *Build Path*: `/`
+
+   *(Cách khác, nếu muốn upload thẳng: provider **Drag and Drop .zip** — nén thư mục
+   dự án thành .zip rồi tải lên. Mỗi lần cập nhật phải upload lại.)*
 3. **Build Type**: **Dockerfile**
    - *Dockerfile Path*: `Dockerfile`
    - *Docker Context Path*: `.`
@@ -39,6 +45,11 @@ publish bản cũ.
 5. **Deploy**.
 
 Lần build đầu sẽ hơi lâu (khoảng 80 MB sprite: 13.000 file).
+
+> **Tự động deploy mà không cần OAuth**: sau khi Deploy lần đầu, Dokploy hiện một
+> *Webhook URL*. Vào GitHub → repo → **Settings → Webhooks → Add webhook**, dán URL
+> đó, content type `application/json`, secret như Dokploy hiển thị. Chỉ là 1 webhook
+> trong repo — không thêm tài khoản nào.
 
 ## 3. Domain và HTTPS
 
@@ -60,7 +71,7 @@ Thay đổi DNS mất từ vài phút đến vài giờ.
 
 ## 4. Firebase
 
-Vào <https://console.firebase.google.com> → project **pokesurvivor-free** →
+Vào <https://console.firebase.google.com> → project **pokesurvival-99a53** →
 **Authentication → Settings → Authorized domains**, thêm:
 
 - `pokesurvivor.com`

@@ -8,17 +8,17 @@
  *
  * Si se pone a null, el juego funciona en modo local (sólo en el navegador).
  */
-// Proyecto pokesurvivor-free (desde el 12-10-2026): autenticación normal de Firebase,
-// SIN Identity Platform, así las cuentas son gratis sin límite. ¡No pulsar nunca
-// "Actualizar a Identity Platform" en su consola! (El viejo era pokesurvivor-jpter.)
+// Proyecto pokesurvival-99a53 (nuevo, 20-10-2026; sustituye a pokesurvivor-free):
+// autenticación normal de Firebase, SIN Identity Platform, así las cuentas son gratis
+// sin límite. ¡No pulsar nunca "Actualizar a Identity Platform" en su consola!
 G.FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyB1LpJcsnT7gj7c8cpRMGjhswLPr8-dnBw',
-  authDomain: 'pokesurvivor-free.firebaseapp.com',
-  projectId: 'pokesurvivor-free',
-  storageBucket: 'pokesurvivor-free.firebasestorage.app',
-  messagingSenderId: '798271504277',
-  appId: '1:798271504277:web:dcac4409f969239e87009c',
-  databaseURL: 'https://pokesurvivor-free-default-rtdb.europe-west1.firebasedatabase.app'
+  apiKey: 'AIzaSyCrdyn8mX9Oqm5mRpXXRohBeH37ijaY1aY',
+  authDomain: 'pokesurvival-99a53.firebaseapp.com',
+  projectId: 'pokesurvival-99a53',
+  storageBucket: 'pokesurvival-99a53.firebasestorage.app',
+  messagingSenderId: '1041561320937',
+  appId: '1:1041561320937:web:fff26e3b6129d8aa1b9f78',
+  databaseURL: 'https://pokesurvival-99a53-default-rtdb.europe-west1.firebasedatabase.app'
 };
 
 /* Ejemplo de cómo debe quedar:

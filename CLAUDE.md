@@ -23,7 +23,8 @@ Cada cambio de juego o arreglo de fallos va también en `js/data/changelog.js`
 servidores, base de datos o costes NO van ahí.
 
 ## Servidores
-- Firebase: proyecto **pokesurvivor-free** (autenticación normal: cuentas gratis sin límite).
+- Firebase: proyecto **pokesurvival-99a53** (desde el 20-10-2026; el anterior era pokesurvivor-free).
+  Autenticación normal: cuentas gratis sin límite.
   **Nunca** activar "Identity Platform" ni nada que lo active (funciones de bloqueo, MFA,
   "Actualizar para habilitar"): cobra por usuario. El proyecto viejo pokesurvivor-jpter se borró el 13-10-2026 (con su facturación).
 - Cloudflare: SÓLO el dominio pokesurvivor.com (comprado allí, DNS gratis). El Worker y el TURN

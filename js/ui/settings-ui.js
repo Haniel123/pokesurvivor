@@ -150,7 +150,8 @@ G.SettingsUI = (() => {
                    offline: 'Sin conexión: se subirá al volver', local: 'Guardado sólo en este navegador', guest: 'Invitado: no se guarda' };
     if (G.DB.guest) {
       box.innerHTML = section('Cuenta', 'Estás jugando como <b>invitado</b>: tu progreso no se guarda al salir.')
-        + `<button class="btn gold" id="set-login">Crear cuenta o entrar</button>`;
+        + `<button class="btn gold" id="set-login">Crear cuenta o entrar</button>`
+        + `<p class="note">Si vienes de otra web del juego, entra o crea una cuenta: así podrás importar aquí la partida que exportaste allí.</p>`;
       return;
     }
     const nick = G.Social.me ? G.Social.me.name : (G.DB.user || '');
@@ -159,6 +160,12 @@ G.SettingsUI = (() => {
       + `<div class="set-row"><div class="grow"><b>Apodo</b><small>Es único y no se puede cambiar.</small></div><span class="gold" translate="no">${esc(nick)}</span></div>`
       + `<div class="set-row"><div class="grow"><b>Tipo de cuenta</b></div><span>${esc(kind)}</span></div>`
       + `<div class="set-row"><div class="grow"><b>Partida</b></div><span>${esc(SYNC[st] || st)}</span></div>`
+      + section('Copia de seguridad', 'Para llevar tu partida de una web del juego a otra (por ejemplo, de la versión antigua a ésta) o a otro navegador: púlsalo en un sitio e impórtala en el otro. Lo que tengas en los dos se junta y no se pierde nada.')
+      + `<div class="row wrap" style="gap:8px;margin-top:10px">
+           <button class="btn" id="set-export">Exportar partida</button>
+           <label class="btn" for="set-import-file" style="display:inline-block">Importar partida</label>
+         </div>
+         <input type="file" id="set-import-file" accept=".json,application/json" hidden>`
       + `<div class="row wrap" style="gap:8px;margin-top:12px">
            <button class="btn" id="set-logout">Cerrar sesión</button>
            <button class="btn danger" id="set-delete">Borrar cuenta</button>
@@ -173,6 +180,23 @@ G.SettingsUI = (() => {
     const full = $('set-full'); if (full) full.onclick = toggleFull;
     const lay = $('set-layout'); if (lay) lay.onclick = () => G.LayoutUI.open();
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
+    const ex = $('set-export');
+    if (ex) ex.onclick = () => {
+      const d = G.DB.exportSave();
+      if (!d) { G.UI.toast('No hay ninguna partida que exportar.'); return; }
+      const url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = d.file;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      G.UI.toast('Partida exportada: ' + d.file, 6000);
+    };
+    const file = $('set-import-file');
+    if (file) file.onchange = async () => {
+      const f = file.files && file.files[0];
+      file.value = '';                    // así se puede volver a elegir el mismo archivo
+      if (f) await importFile(f);
+    };
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
     const out = $('set-logout'); if (out) out.onclick = () => { close(); leave(); };
     const del = $('set-delete');
@@ -187,6 +211,55 @@ G.SettingsUI = (() => {
       G.Audio.music(null);
       G.Flow.toLogin();
     };
+  }
+
+  /**
+   * Importar un archivo de partida (ver G.DB.exportSave): se enseña lo que trae,
+   * se junta con lo de esta cuenta y se recarga el juego para que todas las
+   * pantallas vean la partida nueva.
+   */
+  async function importFile(f) {
+    if (G.Game && G.Game.state !== 'ui') { G.UI.toast('Termina o abandona la partida antes de importar.', 4000); return; }
+    if (f.size > 4e6) { G.UI.toast('Ese archivo es demasiado grande para ser una partida.'); return; }
+    let data;
+    try { data = JSON.parse(await f.text()); }
+    catch (e) { G.UI.toast('No se pudo leer el archivo (¿está completo?).'); return; }
+    const r = G.DB.inspectImport(data);
+    if (!r.ok) { G.UI.toast(r.error, 4000); return; }
+    if (!await confirmImport(r.info)) return;
+    const done = G.DB.importSave(data);
+    if (!done.ok) { G.UI.toast(done.error, 4000); return; }
+    G.UI.toast('¡Partida importada! Guardando y recargando…', 6000);
+    // Se sube a la nube (si se puede) y se recarga: es la forma más segura de
+    // que ninguna pantalla se quede con la partida vieja en memoria.
+    try { await G.DB.flush(); } catch (e) { /* la copia del navegador ya está */ }
+    setTimeout(() => location.reload(), 700);
+  }
+
+  /** "¿Importar esta partida?" con el resumen del archivo. → true si se acepta. */
+  function confirmImport(info) {
+    const date = info.updated ? new Date(info.updated).toLocaleDateString(G.I18n.locale) : '—';
+    // Una frase entera (con {x} en el diccionario): así se traduce de una pieza.
+    const resumen = 'Archivo de ' + (info.name || 'un entrenador') + ': ' + info.dex + ' Pokémon · ' +
+      info.shiny + ' shiny · ' + info.coins.toLocaleString(G.I18n.locale) + ' monedas · ' + date;
+    return new Promise(done => {
+      const el = document.createElement('section');
+      el.className = 'scr dim';
+      el.style.zIndex = 70;
+      el.innerHTML = `<div class="box" style="width:min(460px,100%)">
+        <h2>Importar partida</h2>
+        <p class="sub">${esc(resumen)}</p>
+        <p class="sub">Se junta con tu partida de aquí: los Pokémon, shinies, monedas, mejoras y récords de las dos se suman, y no se pierde nada de ninguna.</p>
+        <div class="row" style="gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+          <button class="btn ghost" data-a="no" type="button">Cancelar</button>
+          <button class="btn gold" data-a="yes" type="button">Importar</button>
+        </div></div>`;
+      document.body.appendChild(el);
+      const end = v => { el.remove(); done(v); };
+      el.querySelector('[data-a=no]').onclick = () => end(false);
+      el.querySelector('[data-a=yes]').onclick = () => end(true);
+      setTimeout(() => el.querySelector('[data-a=yes]').focus(), 50);
+    });
   }
 
   /** Cerrar sesión (si estás en una partida, se abandona). */

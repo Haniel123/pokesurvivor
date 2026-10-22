@@ -899,9 +899,102 @@ G.DB = (() => {
     return true;
   }
 
+  // ---------------- copia de seguridad (exportar / importar) ----------------
+  /*
+   * Para llevar la partida de una web del juego a otra (la versión antigua y
+   * pokesurvivor.com tienen el mismo código, pero cada dominio guarda sus
+   * cuentas por su cuenta), o a otro navegador. En Ajustes > Cuenta,
+   * "Exportar partida" descarga un archivo con la partida entera y en el otro
+   * sitio se carga con "Importar partida".
+   * El archivo lleva también la libreta de monedas y tickets (ver CUR), así que
+   * al juntarlo con lo de la otra cuenta no se pierde ni una moneda.
+   */
+  const BK_FORMAT = 'pokesurvivor-save', BK_VERSION = 1;
+
+  /** La partida actual lista para descargar, o null si no hay partida. */
+  function exportSave() {
+    if (!save) return null;
+    const who = (save.name || user || 'entrenador').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 24) || 'entrenador';
+    return {
+      format: BK_FORMAT,
+      v: BK_VERSION,
+      game: VERSION,
+      exported: Date.now(),
+      file: `pokesurvivor-${who}-${new Date().toISOString().slice(0, 10)}.json`,
+      save: plain(fold(migrate(plain(save), save.name)))
+    };
+  }
+
+  /**
+   * Mira qué trae un archivo de copia SIN tocar la partida.
+   * → { ok, raw, info: { name, dex, shiny, coins, updated } } o { ok:false, error }
+   */
+  function inspectImport(data) {
+    let o = data;
+    if (typeof o === 'string') {
+      try { o = JSON.parse(o); } catch (e) { return { ok: false, error: 'No se pudo leer el archivo.' }; }
+    }
+    const raw = isObj(o) && isObj(o.save) ? o.save : o;   // archivo completo o partida suelta
+    if (!isObj(raw) || !isObj(raw.owned)) return { ok: false, error: 'Ese archivo no es una partida de PokéSurvivor.' };
+    // Al menos un Pokémon que exista: así no vale cualquier JSON que diga "owned".
+    const dex = Object.keys(raw.owned).filter(d => !G.DEX_BY || G.DEX_BY[d]);
+    if (!dex.length) return { ok: false, error: 'Ese archivo no tiene ningún Pokémon del juego.' };
+    return { ok: true, raw, info: {
+      name: typeof raw.name === 'string' ? raw.name.slice(0, 16) : '',
+      dex: dex.length,
+      shiny: isObj(raw.shiny) ? Object.keys(raw.shiny).filter(d => !G.DEX_BY || G.DEX_BY[d]).length : 0,
+      coins: num(raw.coins),
+      updated: +raw.updated || +raw.created || 0
+    } };
+  }
+
+  /**
+   * Mete en la cuenta actual la partida de un archivo (ver exportSave).
+   * Si la cuenta todavía está vacía se queda tal cual la del archivo (así se
+   * cambia de web sin perder ni una moneda); si ya se ha jugado, se juntan las
+   * dos (ver merge) y no se pierde nada de ninguna de las dos.
+   * → { ok, merged?, error? }
+   */
+  function importSave(data) {
+    if (!save) return { ok: false, error: 'Inicia sesión primero.' };
+    if (guest) return { ok: false, error: 'Como invitado no se guarda nada: entra con tu cuenta para importar.' };
+    const r = inspectImport(data);
+    if (!r.ok) return r;
+    // Un archivo tocado a mano puede traer un campo con otro tipo (por ejemplo
+    // stats como texto): se ponen los de serie en vez de romper la partida.
+    const clean = plain(r.raw);
+    for (const k of ['owned', 'shiny', 'upgrades', 'pupg', 'dfav', 'pused', 'pstart', 'legends', 'arenas',
+                     'itemsFound', 'evoMoves', 'ach', 'missions', 'profile', 'stats', 'pbind', 'pban', 'led']) {
+      if (clean[k] != null && !isObj(clean[k])) delete clean[k];
+    }
+    if (typeof clean.tickets === 'number') clean.tickets = { t1: clean.tickets };   // partidas viejas
+    else if (clean.tickets != null && !isObj(clean.tickets)) delete clean.tickets;
+    if (clean.pity != null && !isObj(clean.pity) && typeof clean.pity !== 'number') delete clean.pity;
+    let inc;
+    try { inc = migrate(clean, save.name); }
+    catch (e) { return { ok: false, error: 'El archivo está dañado.' }; }
+    // Fichas raras (un archivo tocado a mano): fecha y origen válidos.
+    for (const coll of ['owned', 'shiny']) for (const d in inc[coll] || {}) {
+      const e2 = inc[coll][d];
+      if (isObj(e2)) { e2.at = +e2.at || 0; if (typeof e2.from !== 'string') e2.from = 'import'; }
+      else inc[coll][d] = { at: 0, from: 'import' };
+    }
+    // Compañero que no está en la colección: como si no tuviera (se elige otro).
+    if (inc.partner && !inc.owned[inc.partner]) { inc.partner = null; inc.partnerShiny = false; }
+    const empty = !save.partner && !Object.keys(save.owned || {}).length;
+    const s = empty ? inc : merge(plain(fold(save)), inc);
+    s.name = save.name || s.name;                     // el apodo de esta cuenta manda
+    s.created = Math.min(+save.created || Date.now(), +inc.created || Date.now());
+    s.updated = Date.now();
+    applyInPlace(migrate(s, s.name));
+    commit();
+    return { ok: true, merged: !empty };
+  }
+
   return {
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow, saveNow,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf, isFav, setFav,
+    exportSave, inspectImport, importSave,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
     /** Acceso de bajo nivel para los módulos de red (sólo en modo nube). */

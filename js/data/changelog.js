@@ -6,6 +6,15 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-22', title: ['Exportar e importar la partida', 'Export and import your game'], new: [
+    ['Ajustes > Cuenta tiene ahora «Exportar partida» e «Importar partida»: el archivo que descarga una sirve para llevar la partida a otra web del juego (por ejemplo, de la versión antigua a pokesurvivor.com) o a otro navegador. Lo que haya en los dos sitios se junta: Pokémon, shinies, monedas, tickets, mejoras, logros y récords, sin perder nada.',
+     'Settings > Account now has “Export game” and “Import game”: the file one site downloads lets you move your save to another site of the game (for example, from the old version to pokesurvivor.com) or to another browser. Whatever you have in both places is merged: Pokémon, shinies, coins, tickets, upgrades, achievements and records, without losing anything.'],
+    ['Al importar se enseña qué trae el archivo (entrenador, Pokémon, shinies, monedas y fecha) antes de hacer nada, y luego el juego se recarga con la partida nueva.',
+     'When importing you are shown what the file brings (trainer, Pokémon, shinies, coins and date) before anything happens, and then the game reloads with the new save.']
+  ], chg: [], fix: [
+    ['Si el archivo viene de una versión anterior del juego, se actualiza solo al importarlo: no hay que hacer nada más.',
+     'If the file comes from an older version of the game, it is updated on import: you don’t need to do anything else.']
+  ] },
   { d: '2026-10-19', title: ['38 ataques nuevos', '38 new moves'], new: [
     ['38 ataques nuevos: ahora todos los tipos tienen 5 o más (Roca, Lucha, Dragón y Hada tenían sólo 2). Entre ellos Hiperrayo, Rayo Solar, Magnitud, Torbellino, Onda Trueno, Enfado, Carantoña, Golpe Bajo... cada uno con su evolución.',
      '38 new moves: every type now has 5 or more (Rock, Fighting, Dragon and Fairy had only 2). Among them Hyper Beam, Solar Beam, Magnitude, Whirlpool, Thunder Wave, Outrage, Play Rough, Sucker Punch... each with its evolution.'],
